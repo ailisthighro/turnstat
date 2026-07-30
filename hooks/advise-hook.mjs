@@ -1,47 +1,11 @@
 #!/usr/bin/env node
-// Claude Code `UserPromptSubmit` 훅 어댑터.
-//   stdin 으로 {prompt, session_id, transcript_path, cwd, ...} 를 받아,
-//   판정 결과를 두 채널로 나눠 내보낸다.
+// 직접 경로로 걸고 싶은 사람을 위한 shim. 본체는 src/hook.mjs 하나뿐이다(중복 구현 금지).
 //
-//   systemMessage      → 사용자에게 보이는 한 줄 (주 채널)
-//   additionalContext  → Claude 에게 주입 (사람 몫을 먼저 고지하게 만듦)
-//
-//   ※ VSCode 확장에서 additionalContext 가 주입되지 않는 이슈가 보고돼 있어
-//     (anthropics/claude-code#49063) systemMessage 를 주 채널로 둔다.
-//   ※ 절대 exit 2 를 쓰지 않는다 — 그건 프롬프트를 차단하고 「지워버린다」.
-//     사용자가 친 글이 날아가는 건 도구가 할 짓이 아니다.
+// 권장 등록 방식은 이쪽이 아니라 서브커맨드다:
+//   "command": "npx -y turnstat hook"
+// 경로·셸 변수를 안 써서 Windows(cmd.exe)에서도 동일하게 돈다.
+// 이 파일을 경로로 걸 땐 절대 경로를 쓸 것 — $CLAUDE_PROJECT_DIR 은 cmd.exe 에서 확장되지 않는다.
 
-import { analyze, formatForUser, formatForAgent } from "../src/advise.mjs";
+import { runHook } from "../src/hook.mjs";
 
-let raw = "";
-process.stdin.setEncoding("utf8");
-for await (const chunk of process.stdin) raw += chunk;
-
-let payload = {};
-try {
-  payload = JSON.parse(raw || "{}");
-} catch {
-  // 입력이 깨져도 프롬프트 처리를 방해하지 않는다.
-  process.exit(0);
-}
-
-const prompt = typeof payload.prompt === "string" ? payload.prompt : "";
-if (!prompt.trim()) process.exit(0);
-
-const result = analyze(prompt);
-const out = { suppressOutput: true };
-
-const userLine = formatForUser(result);
-if (userLine) out.systemMessage = userLine;
-
-const agentNote = formatForAgent(result);
-if (agentNote) {
-  out.hookSpecificOutput = {
-    hookEventName: "UserPromptSubmit",
-    // 사양상 상한 10,000자.
-    additionalContext: agentNote.slice(0, 9_500)
-  };
-}
-
-process.stdout.write(JSON.stringify(out));
-process.exit(0);
+process.exit(await runHook());

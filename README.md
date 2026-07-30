@@ -122,7 +122,7 @@ $ ccpreflight advise "supabase anon 키를 vercel에 붙이고 배포까지"
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR/hooks/advise-hook.mjs\"",
+            "command": "npx -y turnstat hook",
             "timeout": 10
           }
         ]
@@ -130,6 +130,25 @@ $ ccpreflight advise "supabase anon 키를 vercel에 붙이고 배포까지"
     ]
   }
 }
+```
+
+### ⚠️ `$CLAUDE_PROJECT_DIR` 를 쓰지 말 것 (Windows 에서 조용히 죽는다)
+
+공식 문서는 훅 경로에 `$CLAUDE_PROJECT_DIR` 접두사를 권하지만, **Windows 셸은 cmd.exe 라
+`$VAR` 를 확장하지 않는다.** 확장되지 않은 문자열이 그대로 넘어가 `The system cannot find
+the path specified` 로 훅이 죽고, 훅 실패는 조용해서 알아채기 어렵다
+([#24710](https://github.com/anthropics/claude-code/issues/24710)).
+
+그래서 `turnstat hook` 을 **서브커맨드**로 뒀다 — 경로도 셸 변수도 안 쓰므로 3개 OS 에서 동일하게 돈다.
+
+npm 설치 전(로컬 개발 중)이라면 절대 경로를 쓴다:
+
+```json
+// Windows
+"command": "node D:\\turnstat\\bin\\turnstat.mjs hook"
+
+// macOS / Linux
+"command": "node /path/to/turnstat/bin/turnstat.mjs hook"
 ```
 
 채널을 둘로 나눈다:

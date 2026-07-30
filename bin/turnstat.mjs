@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { listSessions, parseSession, withCost, totals, slugForCwd } from "../src/stat.mjs";
 import { analyze, formatForUser } from "../src/advise.mjs";
+import { runHook } from "../src/hook.mjs";
 
 const argv = process.argv.slice(2);
 const cmd = argv[0];
@@ -106,10 +107,18 @@ switch (cmd) {
   case "advise":
     cmdAdvise();
     break;
+  case "hook":
+    // UserPromptSubmit 훅 진입점. 서브커맨드로 두는 이유:
+    //   settings.json 에 스크립트 「경로」를 적으면 Windows(cmd.exe)에서 $CLAUDE_PROJECT_DIR 이
+    //   확장되지 않아 훅이 조용히 죽는다(anthropics/claude-code#24710).
+    //   `npx -y turnstat hook` 형태면 경로도 셸 변수도 필요 없어 3개 OS 에서 동일하게 돈다.
+    process.exit(await runHook());
+    break;
   default:
     console.log(`turnstat — 코딩 에이전트 명령 단위 사용량·사전 판정
 
   turnstat stat [--last N] [--session ID] [--ttl 5m|1h] [--json] [--csv]
   turnstat advise "작업 설명"
+  turnstat hook                  UserPromptSubmit 훅 (stdin→JSON)
 `);
 }
