@@ -1,0 +1,37 @@
+{
+  "name": "turnstat",
+  "version": "0.1.0",
+  "description": "Per-command token & cost stats for coding agents, plus pre-run model advice",
+  "type": "module",
+  "bin": {
+    "turnstat": "bin/turnstat.mjs"
+  },
+  "files": [
+    "bin",
+    "src",
+    "hooks",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "claude-code",
+    "claude",
+    "ai-agent",
+    "cli",
+    "token-usage",
+    "cost-tracking",
+    "developer-tools"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ailisthighro/turnstat.git"
+  },
+  "scripts": {
+    "stat": "node bin/turnstat.mjs stat",
+    "advise": "node bin/turnstat.mjs advise"
+  }
+}
