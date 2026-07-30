@@ -11,6 +11,18 @@
           }
         ]
       }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node D:\\turnstat\\bin\\turnstat.mjs stop-hook",
+            "timeout": 10,
+            "statusMessage": "turnstat: 사용량 집계"
+          }
+        ]
+      }
     ]
   }
 }

@@ -165,6 +165,37 @@ npm 설치 전(로컬 개발 중)이라면 절대 경로를 쓴다:
 > ([#49063](https://github.com/anthropics/claude-code/issues/49063)). CLI 에선 정상.
 > 그래서 사용자 고지는 `systemMessage` 를 주 채널로 쓴다.
 
+### 턴이 끝나면 사용량 한 줄 (`Stop` 훅)
+
+`advise` 가 **작업 전**을 맡는다면, `Stop` 훅은 **작업 후**를 맡는다.
+응답이 끝날 때마다 직전 한 턴의 사용량을 한 줄로 찍는다.
+
+```json
+// .claude/settings.json — 위 UserPromptSubmit 과 같은 "hooks" 안에 나란히 둔다
+"Stop": [
+  {
+    "hooks": [
+      { "type": "command", "command": "npx -y turnstat stop-hook", "timeout": 10 }
+    ]
+  }
+]
+```
+
+```
+이번 턴: Opus 5 · 호출 26 · 출력 14.2k · 캐시읽기 1.53M · $1.27
+```
+
+- 캐시 읽기가 0 이면 그 칸은 생략한다. 단가를 모르는 모델이면 비용만 빠지고 토큰 수는 남는다.
+- 캐시 TTL 은 `TURNSTAT_TTL=1h` 로 바꾼다 (기본 `5m`).
+- `stop_hook_active` 가 켜진 실행에서는 아무것도 찍지 않는다 — 같은 줄이 두 번 나오는 걸 막는다.
+
+> ⚠️ 이 훅이 도는 시점에도 트랜스크립트는 아직 쓰이는 중일 수 있어 **마지막 어시스턴트
+> 메시지 1건이 빠질 수 있다.** 「거의 정확」한 값이지 정산치가 아니다.
+> 정확한 누적은 `turnstat stat` 을 쓴다.
+
+`UserPromptSubmit` 과 같은 원칙 — exit 2 를 쓰지 않고, 어떤 실패에서도 조용히 exit 0 이다.
+사용량 표시가 응답 종료를 막는 건 도구가 할 짓이 아니다.
+
 ---
 
 ## 개발
@@ -172,11 +203,18 @@ npm 설치 전(로컬 개발 중)이라면 절대 경로를 쓴다:
 ```bash
 node bin/turnstat.mjs stat --last 10
 node bin/turnstat.mjs advise "작업 설명"
-npm test          # 분류 규칙 회귀 테스트
+npm test          # 분류 규칙 + Stop 훅 회귀 테스트
 ```
 
 규칙 기반 분류기는 패턴 하나를 고치면 다른 케이스가 조용히 깨진다.
 `test/advise.test.mjs` 가 감지·오탐·추천을 고정해 둔다 — **규칙을 늘릴 때마다 반드시 돌릴 것.**
+`test/stop-hook.test.mjs` 는 한 줄 요약의 포맷과 실패 경로(깨진 입력·usage 없는 세션)를 고정한다.
+
+### 훅 설정은 세션 시작 때만 읽힌다
+
+`settings.json` 을 고쳐도 **돌고 있는 세션에는 반영되지 않는다.** 새 세션에서 확인할 것.
+훅이 실제로 돌았는지는 프로젝트 루트에 `.turnstat-trace` 빈 파일을 만들어 두면 알 수 있다 —
+`hook.mjs` 가 호출될 때마다 한 줄씩 남긴다. 훅 실패는 조용해서 이것 없이는 판별이 안 된다.
 
 ## 상태
 

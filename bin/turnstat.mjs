@@ -2,6 +2,7 @@
 import { listSessions, parseSession, withCost, totals, slugForCwd } from "../src/stat.mjs";
 import { analyze, formatForUser } from "../src/advise.mjs";
 import { runHook } from "../src/hook.mjs";
+import { runStopHook } from "../src/stop-hook.mjs";
 
 const argv = process.argv.slice(2);
 const cmd = argv[0];
@@ -114,11 +115,16 @@ switch (cmd) {
     //   `npx -y turnstat hook` 형태면 경로도 셸 변수도 필요 없어 3개 OS 에서 동일하게 돈다.
     process.exit(await runHook());
     break;
+  case "stop-hook":
+    // Stop 훅 진입점. 직전 한 턴의 사용량을 systemMessage 한 줄로 돌려준다.
+    process.exit(await runStopHook());
+    break;
   default:
     console.log(`turnstat — 코딩 에이전트 명령 단위 사용량·사전 판정
 
   turnstat stat [--last N] [--session ID] [--ttl 5m|1h] [--json] [--csv]
   turnstat advise "작업 설명"
   turnstat hook                  UserPromptSubmit 훅 (stdin→JSON)
+  turnstat stop-hook             Stop 훅 — 직전 한 턴 요약 (stdin→JSON)
 `);
 }
