@@ -107,15 +107,65 @@ $ ccpreflight advise "supabase anon 키를 vercel에 붙이고 배포까지"
 
 ---
 
+---
+
+## 훅으로 자동 실행
+
+`advise` 를 프롬프트 제출 시점에 자동으로 물리려면 `UserPromptSubmit` 훅에 건다.
+
+```json
+// .claude/settings.json
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/hooks/advise-hook.mjs\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+채널을 둘로 나눈다:
+
+| 채널 | 대상 | 내용 |
+|---|---|---|
+| `systemMessage` | **사용자** | 추천 한 줄, 또는 범위 밖 고지 |
+| `additionalContext` | **Claude** | "이 단계는 사람 몫이니 먼저 알려라" |
+
+**exit 2 는 쓰지 않는다.** 그건 프롬프트를 차단하고 **지워버린다** — 사용자가 친 글이
+날아가는 건 도구가 할 짓이 아니다. 입력이 깨지거나 프롬프트가 비어도 항상 exit 0 으로 빠진다.
+
+> ⚠️ `additionalContext` 가 VSCode 확장에서 주입되지 않는 이슈가 보고돼 있다
+> ([#49063](https://github.com/anthropics/claude-code/issues/49063)). CLI 에선 정상.
+> 그래서 사용자 고지는 `systemMessage` 를 주 채널로 쓴다.
+
+---
+
+## 개발
+
+```bash
+node bin/turnstat.mjs stat --last 10
+node bin/turnstat.mjs advise "작업 설명"
+npm test          # 분류 규칙 회귀 테스트
+```
+
+규칙 기반 분류기는 패턴 하나를 고치면 다른 케이스가 조용히 깨진다.
+`test/advise.test.mjs` 가 감지·오탐·추천을 고정해 둔다 — **규칙을 늘릴 때마다 반드시 돌릴 것.**
+
 ## 상태
 
-설계 단계. 구현 전 확인해야 할 것:
+`stat` · `advise` · 훅 어댑터 동작. 실 세션 로그로 검증 완료.
 
-- [ ] **훅 연결 방식 검증** — 프롬프트 제출 시점에 끼어들어 한 줄 출력하는
-      공식 메커니즘의 정확한 이름·출력 형식. 추측 금지, 문서로 확인 후 진행.
-- [ ] JSONL 스키마 고정 (실 로그로 검증 — 파싱 자체는 확인됨)
-- [ ] 추천 판정 규칙 + 범위 밖 감지 사전 작성
-- [ ] npm 패키지명 확정 (`ccpreflight` 가용 여부 확인)
+- [ ] 훅을 실제 세션에 물려 VSCode 에서 `systemMessage` 표시 확인
+- [ ] 분류 규칙 확장 (현재 한국어 위주 + 영어 기본형)
+- [ ] npm 배포 (`turnstat` 가용 여부 확인)
 
 ## 라이선스
 

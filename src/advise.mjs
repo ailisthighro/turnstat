@@ -13,43 +13,43 @@ export const OUT_OF_SCOPE = [
     id: "dashboard",
     label: "대시보드 조작",
     hint: "웹 대시보드에서 직접 설정해야 합니다",
-    re: /(vercel|supabase|cloudflare|netlify|railway|firebase|aws\s*콘솔|콘솔)[^\n]{0,20}(대시보드|설정|환경\s*변수|env|토글|콘솔)|환경\s*변수[^\n]{0,10}(등록|추가|넣|붙)/i
+    re: /(vercel|supabase|cloudflare|netlify|railway|firebase|heroku|aws)[^\n]{0,24}(대시보드|dashboard|콘솔|console|설정|환경\s*변수|env\s*var)|환경\s*변수[^\n]{0,10}(등록|추가|설정|넣|붙)|(add|set|paste|configure)[^\n]{0,20}(env(ironment)?\s*var|secret)[^\n]{0,20}(dashboard|vercel|console)/i
   },
   {
     id: "credentials",
     label: "계정·인증·키 발급",
     hint: "계정에서 직접 발급/등록해야 합니다",
-    re: /(api\s*key|api\s*키|토큰|시크릿|secret|oauth|클라이언트\s*(id|시크릿))[^\n]{0,12}(발급|생성|등록|넣|붙|입력)|결제\s*수단|카드\s*등록/i
+    re: /(api\s*(key|키)|access\s*token|토큰|시크릿|secret\s*key|oauth\s*(앱|app)?|클라이언트\s*(id|시크릿))[^\n]{0,14}(발급|생성|등록|넣|붙|입력)|결제\s*수단|카드\s*등록|(create|generate|issue)[^\n]{0,16}(api\s*key|oauth\s*app|access\s*token)|billing\s*(info|method)/i
   },
   {
     id: "migration",
     label: "DB 마이그레이션 실행",
     hint: "SQL 에디터에서 직접 실행해야 합니다",
-    re: /(sql|마이그레이션|migration)[^\n]{0,12}(실행|돌려|적용|apply)|sql\s*에디터/i
+    re: /(sql|마이그레이션|migration)[^\n]{0,14}(실행|돌려|돌린|적용|apply|run)|sql\s*에디터|sql\s*editor|(run|apply|execute)[^\n]{0,14}(the\s*)?(migration|sql)/i
   },
   {
     id: "store",
     label: "앱스토어 제출",
     hint: "App Store Connect / Play Console 에서 직접 처리해야 합니다",
-    re: /(앱\s*스토어|app\s*store|testflight|play\s*(console|스토어)|심사)[^\n]{0,12}(제출|올리|업로드|등록|신청)/i
+    re: /(앱\s*스토어|app\s*store|testflight|play\s*(console|스토어)|심사)[^\n]{0,14}(제출|올리|업로드|등록|신청)|(submit|upload)[^\n]{0,20}(app\s*store|testflight|play\s*console|for\s*review)/i
   },
   {
     id: "dns",
     label: "DNS·도메인",
     hint: "도메인 등록기관에서 직접 변경해야 합니다",
-    re: /(dns|네임\s*서버|nameserver|도메인)[^\n]{0,12}(설정|변경|연결|등록)|(a|cname|txt)\s*레코드/i
+    re: /(dns|네임\s*서버|nameserver|도메인)[^\n]{0,14}(설정|변경|연결|등록|point|update)|(a|cname|txt|mx)\s*(레코드|record)/i
   },
   {
     id: "physical",
     label: "실기기·외부 확인",
     hint: "직접 눈으로 확인해야 합니다",
-    re: /(실기기|실제\s*기기|실\s*결제|실제\s*결제)[^\n]{0,12}(테스트|확인|검증)|(메일|이메일|문자|sms)[^\n]{0,10}(수신|도착)\s*확인/i
+    re: /(실기기|실제\s*기기|실\s*결제|실제\s*결제)[^\n]{0,14}(테스트|확인|검증)|(메일|이메일|문자|sms)[^\n]{0,12}(수신|도착)\s*확인|(check|verify)[^\n]{0,20}(on\s*(a\s*)?(real|physical)\s*device|received\s*(the\s*)?email)/i
   },
   {
     id: "approval",
     label: "승인·정책 동의",
     hint: "직접 동의/승인해야 합니다",
-    re: /(약관|권한|플랜)[^\n]{0,12}(동의|승인|전환|업그레이드)|유료\s*(전환|결제)/i
+    re: /(약관|권한|플랜)[^\n]{0,14}(동의|승인|전환|업그레이드)|유료\s*(전환|결제)|(accept|agree\s*to)[^\n]{0,16}(terms|tos)|upgrade[^\n]{0,14}(plan|to\s*pro)/i
   }
 ];
 
@@ -60,10 +60,62 @@ export function detectOutOfScope(prompt) {
 
 // ── 난이도 판정 ────────────────────────────────────────────────
 
-const HEAVY = /리팩터|refactor|아키텍처|architecture|마이그레이션|전면|전체[^\n]{0,6}(수정|점검|감사)|설계|재설계|성능\s*최적화|보안\s*(감사|점검)|디버그|디버깅|원인\s*(파악|찾)|왜\s*안\s*(되|돼)/i;
-const BROAD = /전부|모두|싹\s*다|여러\s*(파일|곳)|모든\s*(파일|페이지|컴포넌트)|프로젝트\s*전체|일괄/i;
-const TRIVIAL = /오타|typo|주석|이름\s*(변경|바꾸)|rename|포맷|formatting|한\s*줄|색깔?\s*(변경|바꾸)|텍스트\s*(변경|수정)/i;
-const QUESTION = /(뭐|무엇|어디|어떻게|왜|which|what|where|how|why)[^\n]{0,20}\?|알려\s*줘|설명해|찾아\s*줘/i;
+// 한국어는 조사(을/를/만/도/은/는/이/가)가 끼어들므로 [을를만도은는이가]? 를 넣어 흡수한다.
+//   이게 없으면 「이름만 바꿔줘」 같은 흔한 표현을 통째로 놓친다.
+const P = "[을를만도은는이가]?";
+
+const HEAVY = new RegExp(
+  [
+    `리팩터|리팩토링|아키텍처|재설계|설계`,
+    `마이그레이션|전면|일괄`,
+    `전체${P}\\s*(수정|점검|감사|검토)`,
+    `성능\\s*최적화|보안\\s*(감사|점검|검토)`,
+    `디버그|디버깅|원인${P}\\s*(파악|찾|분석)`,
+    `왜\\s*안\\s*(되|돼)|안\\s*(되는|돼는)\\s*(이유|원인)`,
+    // English
+    `refactor|architect|redesign|migrat|debug|root\\s*cause`,
+    `optimi[sz]e|security\\s*(audit|review)|investigate|why\\s+(is|does|isn't|doesn't)`
+  ].join("|"),
+  "i"
+);
+
+const BROAD = new RegExp(
+  [
+    `전부|모두|싹\\s*다|일괄`,
+    `여러\\s*(파일|곳|군데)|모든\\s*(파일|페이지|컴포넌트|라우트)`,
+    `프로젝트\\s*전체|코드베이스`,
+    // English
+    `all\\s+(files|pages|components|routes)|across\\s+the\\s+(repo|codebase|project)`,
+    `every\\s+(file|page|component)|entire\\s+(repo|codebase|project)|codebase[-\\s]?wide`
+  ].join("|"),
+  "i"
+);
+
+const TRIVIAL = new RegExp(
+  [
+    `오타|주석`,
+    `이름${P}\\s*(변경|바꾸|바꿔|수정)|네이밍`,
+    `포맷|들여쓰기|정렬`,
+    `한\\s*줄|색(깔|상)?${P}\\s*(변경|바꾸|바꿔|수정)`,
+    `텍스트${P}\\s*(변경|바꾸|바꿔|수정)|문구${P}\\s*(변경|수정)`,
+    // English
+    `typo|rename|renaming|comment|formatting|indent|whitespace`,
+    `one[-\\s]?liner|change\\s+(the\\s+)?(text|label|color|colour)`
+  ].join("|"),
+  "i"
+);
+
+const QUESTION = new RegExp(
+  [
+    `(뭐|무엇|어디|어떻게|왜|언제|얼마)[^\\n]{0,20}[?？]`,
+    `알려\\s*(줘|주세요)|설명해|찾아\\s*(줘|주세요)|확인해\\s*(줘|주세요)`,
+    `(뭐|무엇)(야|임|인가|예요|에요)|맞(나|냐|아)[?？]?$`,
+    // English
+    `^(what|where|which|how|why|when|who|is|are|does|do|can)\\b[^\\n]{0,60}[?？]`,
+    `explain|tell\\s+me|show\\s+me|find\\s+(out|where)`
+  ].join("|"),
+  "i"
+);
 
 /**
  * 모델·effort 추천.
